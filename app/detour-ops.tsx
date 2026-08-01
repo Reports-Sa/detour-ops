@@ -474,47 +474,716 @@ function ControlBoard({
             ? phaseBlockers > 0 ? "attention" : "complete"
             : index === currentPhase ? "current" : "future";
           const gateLabel = index < currentPhase
-            ? phaseBlockers > 0 ? `${p…17858 tokens truncated…isplay: grid; gap: 5px; padding: 13px; border-right: 1px solid var(--line); }.report-meta span { color: var(--muted); font-size: 9px; text-transform: uppercase; }.report-meta b { font-size: 11px; }
-.report-form { display: grid; grid-template-columns: repeat(3, 1fr); }.report-field { grid-column: 1 / -1; display: grid; gap: 7px; padding: 14px 18px; border-bottom: 1px solid var(--line); }.report-field.short { grid-column: span 1; }.report-field textarea { resize: vertical; line-height: 1.5; }.report-signatures { display: grid; grid-template-columns: repeat(3, 1fr); }.report-signatures > div { min-height: 125px; display: grid; align-content: start; gap: 8px; padding: 18px; border-right: 1px solid var(--line); }.report-signatures span { color: var(--muted); font-size: 9px; text-transform: uppercase; }.report-signatures i { margin-top: 32px; padding-top: 6px; color: var(--muted); border-top: 1px solid var(--line); font-size: 9px; }
+            ? phaseBlockers > 0 ? `${phaseBlockers} CARRY-OVER BLOCKERS` : "GATE PASSED"
+            : index === currentPhase
+              ? phaseBlockers > 0 ? `${phaseBlockers} GATE BLOCKERS` : "READY FOR SIGNATURE"
+              : `${phaseBlockers} FUTURE CONTROLS`;
+          return (
+            <article className={`phase-card ${stateClass}`} key={phase.key}>
+              <div className="phase-key">{phase.key}</div>
+              <div className="phase-content">
+                <small>PHASE {index + 1}</small>
+                <h3>{phase.name}</h3>
+                <p>{phase.short}</p>
+                <ul>
+                  {phase.steps.map((step) => <li key={step}>{step}</li>)}
+                </ul>
+              </div>
+              <div className="phase-gate">
+                <span>{gateLabel}</span>
+                <strong>{phase.gate}</strong>
+              </div>
+            </article>
+          );
+        })}
+      </section>
 
-.assistant-grid { display: grid; grid-template-columns: .8fr 1.3fr; gap: 18px; }.source-vault, .chat-console, .rag-contract { background: var(--white); border: 1px solid var(--line); box-shadow: var(--shadow); }.vault-head, .chat-console > header { min-height: 72px; display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }.vault-head h3 { margin: 3px 0 0; font: 800 20px "Bahnschrift", "Arial Narrow", sans-serif; }.vault-head > span { color: var(--red); font: 800 9px Consolas, monospace; }
-.source-row { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 11px; padding: 14px 17px; border-bottom: 1px solid var(--paper-2); }.file-mark { display: grid; place-items: center; height: 38px; color: var(--white); background: var(--ink); font: 800 9px Consolas, monospace; }.source-row > div:nth-child(2) { display: grid; gap: 3px; }.source-row small { color: var(--muted); }.source-row > span { padding: 5px; background: var(--paper-2); color: var(--muted); font: 800 8px Consolas, monospace; }.source-row.pending > span { color: #805e00; background: #fff2bd; }
-.upload-source { display: grid; place-items: center; min-height: 55px; margin: 14px; border: 1px dashed var(--teal); color: var(--teal); background: #eff9f8; font-weight: 800; cursor: pointer; }.upload-source input { position: absolute; opacity: 0; pointer-events: none; }.upload-state { margin: -5px 16px 14px; color: var(--muted); font-size: 10px; text-align: center; }.corpus-rules { margin: 15px; padding: 15px; background: var(--paper-2); }.corpus-rules h4 { margin: 0 0 9px; }.corpus-rules ul { margin: 0; padding-left: 17px; color: var(--muted); line-height: 1.7; font-size: 11px; }
-.chat-console { display: grid; grid-template-rows: auto minmax(360px, 1fr) auto; background: #f8f7f2; }.chat-console > header > div { display: flex; align-items: center; gap: 10px; }.chat-console header div div { display: grid; gap: 3px; }.chat-console header small { color: var(--muted); }.ai-signal { width: 38px; height: 38px; display: grid; place-items: center; background: var(--teal); color: white; font: 800 12px Consolas, monospace; }.locked-status { padding: 6px 8px; color: var(--red); border: 1px solid var(--red); font: 800 9px Consolas, monospace; }.chat-body { display: grid; align-content: start; gap: 17px; padding: 22px; }.system-message { padding: 14px; border-left: 5px solid var(--amber); background: #fff5d5; }.system-message span, .suggested-questions > span, .assistant-answer > span { font: 800 8px Consolas, monospace; letter-spacing: .1em; }.system-message p { margin: 7px 0 0; color: #5b573f; line-height: 1.5; }.suggested-questions { display: grid; gap: 7px; }.suggested-questions button { padding: 9px 11px; text-align: left; color: var(--ink); background: white; border: 1px solid var(--line); }.assistant-answer { max-width: 80%; padding: 15px; background: var(--ink); color: var(--white); }.assistant-answer > span { color: var(--amber); }.assistant-answer p { margin: 8px 0; line-height: 1.55; }.assistant-answer small { color: #9fb0b7; }.chat-input { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 13px; border-top: 1px solid var(--line); background: white; }.chat-input button { border: 0; background: var(--teal); color: white; padding: 0 20px; font-weight: 800; }
-.rag-contract { padding: 20px; }.contract-head h3 { margin: 3px 0 0; font: 800 22px "Bahnschrift", "Arial Narrow", sans-serif; }.rag-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr; gap: 8px; align-items: center; margin-top: 20px; }.rag-flow > div { min-height: 105px; display: grid; align-content: center; padding: 13px; background: var(--paper-2); border-top: 4px solid var(--teal); }.rag-flow span { color: var(--teal); font: 800 10px Consolas, monospace; }.rag-flow strong { margin: 7px 0 3px; }.rag-flow small { color: var(--muted); }.rag-flow > i { color: var(--muted); }.contract-warning { display: flex; gap: 20px; align-items: baseline; margin-top: 16px; padding: 14px; background: #fff0ee; border-left: 5px solid var(--red); }.contract-warning p { margin: 0; color: #6f504d; line-height: 1.45; }
+      <section className="metric-grid five">
+        <article className="metric-card red">
+          <span>RELEASE CONTROL</span>
+          <strong>{currentGateBlockers.length}</strong>
+          <p>current-gate blockers that prevent release now</p>
+          <button onClick={() => onNavigate(phaseTabs[currentPhase])}>Close current blockers →</button>
+        </article>
+        <article className="metric-card amber">
+          <span>FORWARD CONTROL</span>
+          <strong>{futureMandatoryControls.length}</strong>
+          <p>mandatory controls tracked for later gates</p>
+          <button onClick={() => onNavigate("assurance")}>Review future controls →</button>
+        </article>
+        <article className="metric-card navy">
+          <span>RISK CONTROL</span>
+          <strong>{criticalIssues}</strong>
+          <p>high-priority records not yet closed</p>
+          <button onClick={() => onNavigate("records")}>Open issue register →</button>
+        </article>
+        <article className="metric-card green">
+          <span>DOCUMENT CONTROL</span>
+          <strong>{state.documents.filter((doc) => doc.status === "Approved").length}/{state.documents.length}</strong>
+          <p>controlled documents approved</p>
+          <button onClick={() => onNavigate("records")}>Review register →</button>
+        </article>
+        <article className="metric-card teal">
+          <span>CODE CONTROL</span>
+          <strong>0</strong>
+          <p>sources indexed; answers remain locked</p>
+          <button onClick={() => onNavigate("assistant")}>Configure sources →</button>
+        </article>
+      </section>
 
-@media (max-width: 1150px) {
-  .topbar { grid-template-columns: 250px 1fr auto; }.topbar-project > span:last-child, .save-readout { display: none; }
-  .workspace { grid-template-columns: 205px minmax(0, 1fr); }.side-rail { padding-inline: 8px; }
-  .metric-grid, .metric-grid.five, .control-grid { grid-template-columns: repeat(2, 1fr); }.form-grid { grid-template-columns: repeat(2, 1fr); }
-  .split-grid, .assistant-grid { grid-template-columns: 1fr; }
-  .issue-row { grid-template-columns: 76px 1fr 90px; }.issue-row > *:nth-child(n+4) { grid-column: span 1; }
+      <section className="split-grid">
+        <article className="panel next-actions">
+          <div className="panel-heading">
+            <div><span className="micro-label">OWNER-DRIVEN</span><h3>Next 4 actions</h3></div>
+            <span className="live-chip">LIVE BOARD</span>
+          </div>
+          {nextActions.map((action, index) => (
+            <div className="action-row" key={action.task}>
+              <span className="action-number">{String(index + 1).padStart(2, "0")}</span>
+              <div><strong>{action.task}</strong><small>{action.owner}</small></div>
+              <span className="action-type">{action.type}</span>
+              <time>{action.due}</time>
+            </div>
+          ))}
+          {nextActions.length === 0 && <div className="empty-actions">No current-gate actions remain. Prepare the authorized gate review.</div>}
+        </article>
+
+        <article className="panel decision-card">
+          <div className="panel-heading">
+            <div><span className="micro-label">EVIDENCE GATE</span><h3>Release decision</h3></div>
+          </div>
+          <div className={gateIsBlocked ? "decision-stamp" : "decision-stamp ready"}>{gateIsBlocked ? "HOLD" : "READY"}</div>
+          <p>{gateIsBlocked
+            ? "Release only when every current or carry-over mandatory control is compliant and supported by evidence."
+            : "The evidence pack is ready for review. Only the authorized signatory can release the gate."}</p>
+          <div className="signature-line"><span>Prepared by</span><b>Traffic Engineer</b></div>
+          <div className="signature-line"><span>Verified by</span><b>Consultant / Authority</b></div>
+        </article>
+      </section>
+    </div>
+  );
 }
 
-@media (max-width: 760px) {
-  .topbar { height: 68px; grid-template-columns: auto 1fr auto; }.brand-lockup { border: 0; padding: 0 10px; }.brand-lockup .eyebrow, .brand-mark, .topbar-project, .topbar-actions .ghost { display: none; }.brand-lockup h1 { font-size: 20px; }.topbar-actions { padding: 0 8px; }.topbar-actions .button { padding: 8px; font-size: 9px; }
-  .mobile-rail-toggle { display: block; height: 100%; padding: 0 12px; color: var(--amber); background: transparent; border: 0; font: 800 10px Consolas, monospace; }
-  .workspace { display: block; min-height: calc(100vh - 68px); }.side-rail { display: none; position: fixed; z-index: 40; top: 68px; left: 0; width: 260px; height: calc(100vh - 68px); }.side-rail.open { display: block; }
-  .status-strip { padding: 9px 14px; }.strip-metrics { display: none !important; }.page-stack { padding: 17px 13px; gap: 16px; }
-  .section-head { grid-template-columns: 46px 1fr; }.section-code { width: 46px; height: 46px; box-shadow: 4px 4px 0 var(--ink); font-size: 16px; }.section-head h2 { font-size: 25px; }.section-action { grid-column: 1 / -1; justify-self: stretch; }.section-action > * { width: 100%; text-align: center; }
-  .control-head-actions { display: grid; grid-template-columns: 1fr auto; }.gate-selector { min-width: 0; text-align: left; }
-  .hero-board { grid-template-columns: 1fr; }.hero-copy { padding: 30px 23px; }.hero-copy h3 { font-size: 37px; }.hero-signal { border-left: 0; border-top: 1px solid #39515c; }.phase-road { grid-template-columns: repeat(5, 230px); }
-  .metric-grid, .metric-grid.five, .control-grid, .form-grid { grid-template-columns: 1fr; }.field.wide { grid-column: auto; }.split-grid { grid-template-columns: 1fr; }.engineering-note, .contract-warning, .document-rule { display: grid; }
-  .signal-cluster { grid-template-columns: 140px 1fr; }.signal-ring { width: 140px; height: 140px; }
-  .checklist-panel { overflow-x: auto; }.checklist-panel .panel-heading, .checklist-foot { min-width: 820px; }.checklist-head { min-width: 820px; }
-  .inspection-sequence { grid-template-columns: repeat(6, 180px); overflow-x: auto; }.record-logic { grid-template-columns: repeat(5, 180px); overflow-x: auto; }
-  .deliverable-panel { grid-template-columns: 1fr; }.report-picker { grid-template-columns: 1fr; }.report-meta { grid-template-columns: repeat(2, 1fr); }.report-form { grid-template-columns: 1fr; }.report-field.short { grid-column: 1; }.report-signatures { grid-template-columns: 1fr; }
-  .issue-composer { grid-template-columns: 1fr; }.issue-row { grid-template-columns: 1fr 1fr; }.issue-title { grid-column: 1 / -1; }
-  .rag-flow { grid-template-columns: 1fr; }.rag-flow > i { transform: rotate(90deg); text-align: center; }
+function ProjectSetup({
+  state,
+  updateProject,
+  updateTraffic,
+  updateChecklist,
+}: {
+  state: ProjectState;
+  updateProject: (field: keyof ProjectState["project"], value: string) => void;
+  updateTraffic: (field: keyof ProjectState["traffic"], value: string) => void;
+  updateChecklist: (
+    group: "survey" | "readiness" | "opening" | "operation" | "closeout",
+    id: string,
+    patch: Partial<ChecklistItem>,
+  ) => void;
+}) {
+  const projectFields: { key: keyof ProjectState["project"]; label: string; wide?: boolean }[] = [
+    { key: "code", label: "Project code" },
+    { key: "title", label: "Project title", wide: true },
+    { key: "client", label: "Client / asset owner" },
+    { key: "consultant", label: "Consultant" },
+    { key: "contractor", label: "Contractor" },
+    { key: "authority", label: "Approving authority" },
+    { key: "road", label: "Road / route" },
+    { key: "chainage", label: "Chainage / limits" },
+    { key: "workType", label: "Work type" },
+    { key: "permit", label: "Permit / NOC number" },
+    { key: "permitExpiry", label: "Permit expiry" },
+    { key: "workingHours", label: "Working hours" },
+    { key: "startDate", label: "Planned start" },
+    { key: "endDate", label: "Planned finish" },
+    { key: "drawing", label: "TDP/TMP drawing & revision" },
+    { key: "drawingStatus", label: "Drawing status" },
+    { key: "scope", label: "Need and scope statement", wide: true },
+    { key: "constraints", label: "Constraints and interfaces", wide: true },
+  ];
+  const trafficFields: { key: keyof ProjectState["traffic"]; label: string }[] = [
+    { key: "roadClass", label: "Road classification" },
+    { key: "postedSpeed", label: "Posted / operating speed" },
+    { key: "lanes", label: "Existing lanes" },
+    { key: "laneWidth", label: "Lane / shoulder widths" },
+    { key: "aadt", label: "AADT (Annual Average Daily Traffic)" },
+    { key: "peakHour", label: "Peak-hour volume" },
+    { key: "heavyVehicles", label: "Heavy vehicle percentage" },
+    { key: "pedestrians", label: "Pedestrian / cyclist demand" },
+    { key: "designVehicle", label: "Design vehicle" },
+    { key: "emergencyRoute", label: "Emergency access requirement" },
+  ];
+
+  return (
+    <div className="page-stack">
+      <SectionHead
+        code="01"
+        title="Project Setup"
+        description="Define the need, verify the site, and establish the traffic baseline before drawing a detour line. Unverified inputs become design risk."
+      />
+
+      <div className="method-ribbon">
+        <span>INPUT</span><b>Need + scope</b><i>→</i><b>Field truth</b><i>→</i><b>Traffic demand</b><i>→</i><span>OUTPUT</span><b>Design brief</b>
+      </div>
+
+      <section className="panel form-panel">
+        <div className="panel-heading">
+          <div><span className="micro-label">S.1 — INPUTS & SCOPE</span><h3>Project identity and controls</h3></div>
+          <span className="required-key">* verified values only</span>
+        </div>
+        <div className="form-grid">
+          {projectFields.map((field) => (
+            <label className={field.wide ? "field wide" : "field"} key={field.key}>
+              <span>{field.label}</span>
+              {field.wide ? (
+                <textarea value={state.project[field.key]} onChange={(event) => updateProject(field.key, event.target.value)} rows={2} />
+              ) : (
+                <input value={state.project[field.key]} onChange={(event) => updateProject(field.key, event.target.value)} />
+              )}
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <ChecklistBoard
+        code="S.2 — SITE SURVEY"
+        title="Site truth checklist"
+        intro="Walk it, measure it, photograph it, and drive it by day and night. A desktop assumption is not field evidence."
+        items={state.survey}
+        onChange={(id, itemPatch) => updateChecklist("survey", id, itemPatch)}
+      />
+
+      <section className="panel form-panel">
+        <div className="panel-heading">
+          <div><span className="micro-label">S.3 — TRAFFIC DATA</span><h3>Operating baseline</h3></div>
+          <span className="source-chip">RECORD SOURCE + DATE</span>
+        </div>
+        <div className="form-grid">
+          {trafficFields.map((field) => (
+            <label className="field" key={field.key}>
+              <span>{field.label}</span>
+              <input value={state.traffic[field.key]} onChange={(event) => updateTraffic(field.key, event.target.value)} />
+            </label>
+          ))}
+        </div>
+        <div className="engineering-note">
+          <strong>Engineering decision, not data collection:</strong>
+          <p>Use the baseline to test route capacity, queue storage, heavy-vehicle swept path, pedestrian demand, emergency access, and the safest work window.</p>
+        </div>
+      </section>
+    </div>
+  );
 }
 
-@media print {
-  body { background: white; font-size: 10px; }
-  .topbar, .side-rail, .status-strip, .section-head .button, .button, .issue-composer, .chat-input { display: none !important; }
-  .workspace { display: block; }.page-stack { padding: 0; }.panel, .report-sheet { box-shadow: none; break-inside: avoid; }.main-stage { width: 100%; }
-  .report-sheet { border: 0; }.report-sheet input, .report-sheet textarea { border: 0; padding: 0; background: transparent; }
+function DetourDesign({
+  state,
+  updateChecklist,
+}: {
+  state: ProjectState;
+  updateChecklist: (group: CheckGroup, id: string, patch: Partial<ChecklistItem>) => void;
+}) {
+  return (
+    <div className="page-stack">
+      <SectionHead
+        code="02"
+        title="Detour Design"
+        description="Compare feasible concepts before detailing the preferred route. The final TDP/TMP must control every road user, every work stage, and every interface."
+        action={<span className="revision-chip">{state.project.drawing}</span>}
+      />
+
+      <section className="panel">
+        <div className="panel-heading">
+          <div><span className="micro-label">C.1 — OPTIONS</span><h3>Option comparison matrix</h3></div>
+          <span className="source-chip">DECISION RECORD</span>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Option</th><th>Traffic arrangement</th><th>Safety</th><th>Capacity</th><th>Constructability</th><th>Primary risk</th><th>Decision</th></tr></thead>
+            <tbody>
+              {optionRows.map((row) => (
+                <tr key={row.option} className={row.decision === "Preferred" ? "selected-row" : ""}>
+                  <td><b className="option-letter">{row.option}</b></td><td>{row.route}</td><td>{row.safety}</td><td>{row.capacity}</td><td>{row.build}</td><td>{row.risk}</td><td><span className={`decision-pill ${row.decision.toLowerCase()}`}>{row.decision}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="design-canvas">
+        <div className="canvas-head">
+          <div><span className="micro-label">C.2 — DETAILED CONTROL</span><h3>Five-zone work-area logic</h3></div>
+          <p>Direction of travel →</p>
+        </div>
+        <div className="road-diagram" aria-label="Temporary traffic control zones">
+          <div className="zone advance"><span>01</span><strong>Advance warning</strong><small>Tell drivers what is ahead</small></div>
+          <div className="zone transition"><span>02</span><strong>Transition</strong><small>Move traffic laterally</small></div>
+          <div className="zone buffer"><span>03</span><strong>Buffer</strong><small>Recovery space — keep clear</small></div>
+          <div className="zone work"><span>04</span><strong>Work space</strong><small>Workers, plant and excavation</small></div>
+          <div className="zone termination"><span>05</span><strong>Termination</strong><small>Return traffic to normal</small></div>
+        </div>
+        <div className="diagram-legend">
+          <span><i className="line solid" />positive protection where required</span>
+          <span><i className="line dash" />channelizing device line</span>
+          <span><i className="line clear" />keep buffer clear</span>
+        </div>
+      </section>
+
+      <section className="control-grid">
+        {[
+          ["Geometry", "Lane widths · tapers · buffers · radii · sight distance · vertical clearance"],
+          ["Road users", "Vehicles · heavy vehicles · pedestrians · cyclists · buses · people with disabilities"],
+          ["Protection", "Barrier need · deflection · end treatment · excavation edge · crash exposure"],
+          ["Operations", "Capacity · queue · access · emergency response · signals · flaggers · work hours"],
+          ["Constructability", "Plant envelope · working room · material delivery · lifting · staging · egress"],
+          ["Temporary devices", "Signs · markings · cones · barriers · lights · VMS · covers / steel plates"],
+          ["Interfaces", "Utilities · drainage · lighting · adjacent projects · stakeholders · public information"],
+          ["Quantities", "Device schedule · BOQ · spare stock · maintenance crew · inspection frequency"],
+        ].map(([title, text], index) => (
+          <article className="control-card" key={title}>
+            <span>{String(index + 1).padStart(2, "0")}</span><h3>{title}</h3><p>{text}</p>
+          </article>
+        ))}
+      </section>
+
+      <ChecklistBoard
+        code="C.3 — DESIGN EVIDENCE"
+        title="Release-to-assurance checklist"
+        intro="Freeze the coordinated package only after option selection, traffic checks, constructability, and interdisciplinary evidence are recorded."
+        items={state.design}
+        onChange={(id, itemPatch) => updateChecklist("design", id, itemPatch)}
+      />
+
+      <section className="panel deliverable-panel">
+        <div>
+          <span className="micro-label">GATE 2 DELIVERABLE</span>
+          <h3>Coordinated design package</h3>
+          <p>TDP/TMP drawings + traffic analysis + staging + device schedule + method statement interfaces + risk controls + constructability record.</p>
+        </div>
+        <div className="hold-point"><span>HOLD POINT</span><strong>No issue for construction until interdisciplinary review is closed.</strong></div>
+      </section>
+    </div>
+  );
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * { scroll-behavior: auto !important; transition: none !important; }
+function FieldAssurance({
+  state,
+  updateChecklist,
+}: {
+  state: ProjectState;
+  updateChecklist: (
+    group: "survey" | "readiness" | "opening" | "operation" | "closeout",
+    id: string,
+    patch: Partial<ChecklistItem>,
+  ) => void;
+}) {
+  return (
+    <div className="page-stack">
+      <SectionHead
+        code="03"
+        title="Field Assurance"
+        description="Use one traceable line from approved design to installed condition, opening acceptance, routine inspections, and safe reinstatement."
+      />
+
+      <div className="inspection-sequence">
+        {[
+          ["A", "Readiness", "Documents, permits, crew, materials"],
+          ["B", "Install", "Safe sequence under controlled exposure"],
+          ["C", "Inspect", "Day + night + drive-through + dimensions"],
+          ["D", "Rectify", "Close defects with evidence"],
+          ["E", "Accept", "Consultant / authority signature"],
+          ["F", "Operate", "Routine + event-triggered inspection"],
+        ].map(([key, title, detail]) => (
+          <div key={key}><span>{key}</span><strong>{title}</strong><small>{detail}</small></div>
+        ))}
+      </div>
+
+      <ChecklistBoard
+        code="A.1 — PRE-INSTALLATION READINESS"
+        title="Release-to-install checklist"
+        intro="A failed mandatory line is a hold point. Record containment, assign an owner, and attach closure evidence."
+        items={state.readiness}
+        onChange={(id, itemPatch) => updateChecklist("readiness", id, itemPatch)}
+      />
+      <ChecklistBoard
+        code="L.2 — PRE-OPENING ACCEPTANCE"
+        title="Release-to-traffic checklist"
+        intro="Inspect against the approved drawing, not memory. Complete the drive-through at the road-user eye level and verify at night."
+        items={state.opening}
+        onChange={(id, itemPatch) => updateChecklist("opening", id, itemPatch)}
+      />
+      <ChecklistBoard
+        code="E.1 — ROUTINE OPERATION"
+        title="Active detour inspection"
+        intro="Use routine frequency plus event-triggered inspections after impact, weather, complaints, traffic changes, or stage switches."
+        items={state.operation}
+        onChange={(id, itemPatch) => updateChecklist("operation", id, itemPatch)}
+      />
+      <ChecklistBoard
+        code="E.2 — REMOVAL & REINSTATEMENT"
+        title="Return-to-normal checklist"
+        intro="Remove the temporary arrangement safely, reinstate permanent assets, verify normal traffic, then archive the evidence and lessons learned."
+        items={state.closeout}
+        onChange={(id, itemPatch) => updateChecklist("closeout", id, itemPatch)}
+      />
+    </div>
+  );
+}
+
+function ChecklistBoard({
+  code,
+  title,
+  intro,
+  items,
+  onChange,
+}: {
+  code: string;
+  title: string;
+  intro: string;
+  items: ChecklistItem[];
+  onChange: (id: string, patch: Partial<ChecklistItem>) => void;
+}) {
+  const blockers = items.filter(isMandatoryGap).length;
+
+  return (
+    <section className="panel checklist-panel">
+      <div className="panel-heading">
+        <div><span className="micro-label">{code}</span><h3>{title}</h3><p>{intro}</p></div>
+        <div className={blockers ? "gate-counter blocked" : "gate-counter ready"}>
+          <strong>{blockers}</strong><span>{blockers ? "BLOCKERS" : "READY"}</span>
+        </div>
+      </div>
+      <div className="checklist-head">
+        <span>Control requirement</span><span>Owner</span><span>Status</span><span>Evidence / reference</span>
+      </div>
+      <div className="checklist-body">
+        {items.map((item) => (
+          <div className={`check-row ${item.status.toLowerCase().replace("/", "")}`} key={item.id}>
+            <div className="check-label">
+              <span className="check-indicator">{item.status === "Pass" ? "✓" : item.status === "Fail" ? "!" : item.status === "N/A" ? "—" : "○"}</span>
+              <div><strong>{item.label}</strong><small>{item.required ? "MANDATORY" : "CONDITIONAL"}</small></div>
+            </div>
+            <input aria-label={`Owner for ${item.label}`} value={item.owner} onChange={(event) => onChange(item.id, { owner: event.target.value })} />
+            <button
+              className={`status-button ${item.status.toLowerCase().replace("/", "")}`}
+              onClick={() => onChange(item.id, { status: statusOrder[(statusOrder.indexOf(item.status) + 1) % statusOrder.length] })}
+              title="Click to cycle status"
+            >
+              {item.status}
+            </button>
+            <input
+              className={(item.status === "Pass" || item.status === "N/A") && item.required && !item.evidence.trim() ? "evidence-input missing" : "evidence-input"}
+              aria-label={`Evidence for ${item.label}`}
+              aria-invalid={(item.status === "Pass" || item.status === "N/A") && item.required && !item.evidence.trim()}
+              placeholder={item.status === "N/A" ? "Reason + approving reference required" : "Document, photo, record or signature"}
+              value={item.evidence}
+              onChange={(event) => onChange(item.id, { evidence: event.target.value })}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="checklist-foot">
+        <span>Open → Pass → Fail → N/A · Pass needs evidence; N/A needs a reason and approving reference.</span>
+        <strong>{blockers ? "GATE HELD — close mandatory evidence gaps" : "GATE READY — obtain authorized signature"}</strong>
+      </div>
+    </section>
+  );
+}
+
+function Records({
+  state,
+  setState,
+}: {
+  state: ProjectState;
+  setState: React.Dispatch<React.SetStateAction<ProjectState>>;
+}) {
+  const [newIssue, setNewIssue] = useState("");
+  const [newType, setNewType] = useState<IssueRecord["type"]>("Observation");
+
+  function cycleDocument(id: string) {
+    setState((current) => ({
+      ...current,
+      documents: current.documents.map((document) => {
+        if (document.id !== id) return document;
+        const next = documentStatusOrder[(documentStatusOrder.indexOf(document.status) + 1) % documentStatusOrder.length];
+        return { ...document, status: next };
+      }),
+    }));
+  }
+
+  function addIssue() {
+    const title = newIssue.trim();
+    if (!title) return;
+    setState((current) => ({
+      ...current,
+      issues: [
+        ...current.issues,
+        {
+          id: `ISS-${String(current.issues.length + 7).padStart(3, "0")}`,
+          type: newType,
+          severity: "Medium",
+          title,
+          owner: "Unassigned",
+          due: new Date().toISOString().slice(0, 10),
+          status: newType === "Change" ? "Proposed" : "Open",
+        },
+      ],
+    }));
+    setNewIssue("");
+  }
+
+  function updateIssue(id: string, patch: Partial<IssueRecord>) {
+    setState((current) => ({
+      ...current,
+      issues: current.issues.map((issue) => issue.id === id ? { ...issue, ...patch } : issue),
+    }));
+  }
+
+  return (
+    <div className="page-stack">
+      <SectionHead
+        code="04"
+        title="Issues & Controlled Documents"
+        description="Turn every question, defect, change, incident, and approval into an owned record with a due date and closure evidence."
+      />
+
+      <section className="panel">
+        <div className="panel-heading">
+          <div><span className="micro-label">DOCUMENT REGISTER</span><h3>Latest status and revision</h3></div>
+          <span className="required-key">Click status to update</span>
+        </div>
+        <div className="table-wrap">
+          <table className="record-table">
+            <thead><tr><th>Type</th><th>Number</th><th>Rev.</th><th>Status</th><th>Owner</th><th>Due</th></tr></thead>
+            <tbody>
+              {state.documents.map((document) => (
+                <tr key={document.id}>
+                  <td><strong>{document.type}</strong></td><td className="mono">{document.number}</td><td>{document.revision}</td>
+                  <td><button className={`record-status ${document.status.toLowerCase()}`} onClick={() => cycleDocument(document.id)}>{document.status}</button></td>
+                  <td>{document.owner}</td><td>{document.due}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="document-rule">
+          <strong>Release rule</strong>
+          <span>Draft is not submitted. Submitted is not approved. Verify the latest revision and intended-use status before site release.</span>
+        </div>
+      </section>
+
+      <section className="panel issue-panel">
+        <div className="panel-heading">
+          <div><span className="micro-label">UNIFIED ISSUE REGISTER</span><h3>From observation to verified closure</h3></div>
+          <span className="source-chip">OWNER + DUE + EVIDENCE</span>
+        </div>
+        <div className="issue-composer">
+          <select aria-label="Issue type" value={newType} onChange={(event) => setNewType(event.target.value as IssueRecord["type"])}>
+            <option>Observation</option><option>NCR</option><option>RFI</option><option>Incident</option><option>Complaint</option><option>Change</option>
+          </select>
+          <input placeholder="Describe a field condition, question, defect, change or incident…" value={newIssue} onChange={(event) => setNewIssue(event.target.value)} onKeyDown={(event) => event.key === "Enter" && addIssue()} />
+          <button className="button primary" onClick={addIssue}>Add record</button>
+        </div>
+        <div className="issue-list">
+          {state.issues.map((issue) => (
+            <article className="issue-row" key={issue.id}>
+              <div className="issue-id"><span>{issue.type}</span><strong>{issue.id}</strong></div>
+              <div className="issue-title"><strong>{issue.title}</strong><small>{issueFlowLabels[issue.type]}</small></div>
+              <select value={issue.severity} onChange={(event) => updateIssue(issue.id, { severity: event.target.value as IssueRecord["severity"] })} aria-label={`Severity for ${issue.id}`}>
+                <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+              </select>
+              <input value={issue.owner} onChange={(event) => updateIssue(issue.id, { owner: event.target.value })} aria-label={`Owner for ${issue.id}`} />
+              <input type="date" value={issue.due} onChange={(event) => updateIssue(issue.id, { due: event.target.value })} aria-label={`Due date for ${issue.id}`} />
+              <select value={issue.status} onChange={(event) => updateIssue(issue.id, { status: event.target.value as IssueRecord["status"] })} aria-label={`Status for ${issue.id}`}>
+                {issueStatusOptions[issue.type].map((status) => <option key={status}>{status}</option>)}
+              </select>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="record-logic">
+        <div><span>01</span><strong>Observe</strong><small>Record fact, location, time and evidence</small></div>
+        <div><span>02</span><strong>Contain</strong><small>Protect road users immediately</small></div>
+        <div><span>03</span><strong>Assign</strong><small>Owner, due date and priority</small></div>
+        <div><span>04</span><strong>Resolve</strong><small>Root cause and corrective action</small></div>
+        <div><span>05</span><strong>Verify</strong><small>Independent closure evidence</small></div>
+      </section>
+    </div>
+  );
+}
+
+function Reports({
+  state,
+  setState,
+}: {
+  state: ProjectState;
+  setState: React.Dispatch<React.SetStateAction<ProjectState>>;
+}) {
+  const [reportType, setReportType] = useState(reportTypes[0]);
+  const reportFields: { key: keyof ProjectState["report"]; label: string; short?: boolean }[] = [
+    { key: "date", label: "Report date", short: true },
+    { key: "shift", label: "Shift / inspection window", short: true },
+    { key: "weather", label: "Weather / surface condition", short: true },
+    { key: "trafficCondition", label: "Traffic condition and queues" },
+    { key: "worksCompleted", label: "Works completed" },
+    { key: "inspections", label: "Inspections, defects and actions" },
+    { key: "incidents", label: "Incidents, near misses or complaints" },
+    { key: "nextShift", label: "Next-shift priorities and handover" },
+  ];
+
+  function updateReport(key: keyof ProjectState["report"], value: string) {
+    setState((current) => ({
+      ...current,
+      report: { ...current.report, [key]: value },
+    }));
+  }
+
+  return (
+    <div className="page-stack report-page">
+      <SectionHead
+        code="05"
+        title="Reports & Handover"
+        description="Generate a concise operational record from the same project data. Separate observed facts, engineering assessment, action, owner, and closure evidence."
+        action={<button className="button dark" onClick={() => window.print()}>Print / save PDF</button>}
+      />
+
+      <section className="report-picker">
+        <label><span>REPORT TYPE</span><select value={reportType} onChange={(event) => setReportType(event.target.value)}>{reportTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
+        <div><span>PROJECT</span><strong>{state.project.code} · {state.project.title}</strong></div>
+        <div><span>CONTROLLED DRAWING</span><strong>{state.project.drawing}</strong></div>
+      </section>
+
+      <section className="report-sheet">
+        <header>
+          <div><span className="report-logo">DO</span><div><small>DETOUR OPERATIONS RECORD</small><h3>{reportType}</h3></div></div>
+          <div><small>REPORT STATUS</small><strong>DRAFT</strong></div>
+        </header>
+        <div className="report-meta">
+          <div><span>Project</span><b>{state.project.code}</b></div>
+          <div><span>Road / location</span><b>{state.project.road} · {state.project.chainage}</b></div>
+          <div><span>Authority</span><b>{state.project.authority}</b></div>
+          <div><span>TDP / TMP</span><b>{state.project.drawing}</b></div>
+        </div>
+        <div className="report-form">
+          {reportFields.map((field) => (
+            <label className={field.short ? "report-field short" : "report-field"} key={field.key}>
+              <span>{field.label}</span>
+              {field.short ? <input value={state.report[field.key]} onChange={(event) => updateReport(field.key, event.target.value)} /> : <textarea rows={3} value={state.report[field.key]} onChange={(event) => updateReport(field.key, event.target.value)} />}
+            </label>
+          ))}
+        </div>
+        <div className="report-signatures">
+          <div><span>Prepared by</span><strong>Traffic Engineer</strong><i>Signature / date</i></div>
+          <div><span>Reviewed by</span><strong>Construction / HSE</strong><i>Signature / date</i></div>
+          <div><span>Accepted by</span><strong>Consultant / Authority</strong><i>Signature / date</i></div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function CodeAssistant() {
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [uploadState, setUploadState] = useState("No indexed sources");
+
+  async function uploadSource(file?: File) {
+    if (!file) return;
+    setUploadState("Storing source…");
+    const body = new FormData();
+    body.append("file", file);
+    body.append("category", "code-source");
+    try {
+      const response = await fetch("/api/files", { method: "POST", body });
+      if (response.status === 401) {
+        setUploadState("Sign in on the private site to store sources");
+        return;
+      }
+      if (!response.ok) throw new Error("Upload failed");
+      setUploadState("Stored privately · indexing connector pending");
+    } catch {
+      setUploadState("Source storage unavailable in local demo");
+    }
+  }
+
+  function askSourceOnly(event: React.FormEvent) {
+    event.preventDefault();
+    if (!question.trim()) return;
+    setAnswer(
+      "Answer withheld: no approved source has been indexed. DetourOps will not answer from general model knowledge. Connect the approved corpus and retrieval service first.",
+    );
+  }
+
+  return (
+    <div className="page-stack assistant-page">
+      <SectionHead
+        code="AI"
+        title="Source-Controlled Code Assistant"
+        description="A RAG-ready workspace for asking the Saudi Highway Code and approved project documents—designed to answer only from indexed sources and show the exact citation."
+        action={<span className="offline-chip">INDEXING NOT CONNECTED</span>}
+      />
+
+      <section className="assistant-grid">
+        <article className="source-vault">
+          <div className="vault-head"><div><span className="micro-label">APPROVED CORPUS</span><h3>Source vault</h3></div><span>0 INDEXED</span></div>
+          <div className="source-row pending">
+            <div className="file-mark">PDF</div><div><strong>Saudi Highway Code 305</strong><small>Candidate source · verify edition and authority</small></div><span>PENDING</span>
+          </div>
+          <div className="source-row empty">
+            <div className="file-mark">TDP</div><div><strong>Approved project TDP/TMP</strong><small>Not uploaded</small></div><span>EMPTY</span>
+          </div>
+          <label className="upload-source">
+            <span>+ Add approved PDF or XLSX source</span>
+            <input type="file" accept=".pdf,.xlsx,image/png,image/jpeg" onChange={(event) => void uploadSource(event.target.files?.[0])} />
+          </label>
+          <p className="upload-state">{uploadState}</p>
+          <div className="corpus-rules">
+            <h4>Corpus admission rule</h4>
+            <ul>
+              <li>Approved edition and issuing authority verified</li>
+              <li>Revision, effective date and superseded status recorded</li>
+              <li>Project-specific documents separated from general code</li>
+              <li>Access is private and audit events are retained</li>
+            </ul>
+          </div>
+        </article>
+
+        <article className="chat-console">
+          <header>
+            <div><span className="ai-signal">AI</span><div><strong>Code Query</strong><small>Source-only policy · citations required</small></div></div>
+            <span className="locked-status">LOCKED</span>
+          </header>
+          <div className="chat-body">
+            <div className="system-message">
+              <span>ANSWER POLICY</span>
+              <p>Use only retrieved passages from approved sources. Cite source, edition, section and page. If evidence is absent or conflicting, abstain and escalate.</p>
+            </div>
+            <div className="suggested-questions">
+              <span>AFTER INDEXING, ASK:</span>
+              {["What controls apply to a lane closure at this speed?", "Where does the code define taper length?", "What must be checked before opening the detour?"].map((item) => <button key={item} onClick={() => setQuestion(item)}>{item}</button>)}
+            </div>
+            {answer && <div className="assistant-answer"><span>DETOUROPS</span><p>{answer}</p><small>No citation · no answer</small></div>}
+          </div>
+          <form className="chat-input" onSubmit={askSourceOnly}>
+            <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask an approved-source question…" />
+            <button type="submit">Ask</button>
+          </form>
+        </article>
+      </section>
+
+      <section className="rag-contract">
+        <div className="contract-head"><span className="micro-label">IMPLEMENTATION CONTRACT</span><h3>How a trustworthy answer is produced</h3></div>
+        <div className="rag-flow">
+          <div><span>01</span><strong>Ingest</strong><small>Approved files + metadata</small></div><i>→</i>
+          <div><span>02</span><strong>Retrieve</strong><small>Relevant source passages</small></div><i>→</i>
+          <div><span>03</span><strong>Answer</strong><small>Only from retrieved context</small></div><i>→</i>
+          <div><span>04</span><strong>Cite</strong><small>Source + section + page</small></div><i>→</i>
+          <div><span>05</span><strong>Abstain</strong><small>If evidence is insufficient</small></div>
+        </div>
+        <div className="contract-warning">
+          <strong>Engineering boundary</strong>
+          <p>The assistant supports retrieval; it does not approve a design. The engineer still checks contract documents, authority requirements, site conditions, revision status, and obtains formal approval.</p>
+        </div>
+      </section>
+    </div>
+  );
 }
