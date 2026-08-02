@@ -64,7 +64,8 @@ export default async (request: Request) => {
       ready: Boolean(apiKey && vectorStoreId),
       source: process.env.RAG_SOURCE_LABEL || "Saudi Highway Code 305",
       edition: process.env.RAG_SOURCE_EDITION || "Approved project corpus",
-      model: process.env.OPENAI_MODEL || "gpt-5.6",
+      model: process.env.OPENAI_MODEL || "gpt-5.6-sol",
+      reasoningEffort: process.env.OPENAI_REASONING_EFFORT || "xhigh",
     });
   }
 
@@ -108,7 +109,8 @@ Never claim to approve a traffic diversion, design, permit, inspection, or field
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-5.6",
+      model: process.env.OPENAI_MODEL || "gpt-5.6-sol",
+      reasoning: { effort: process.env.OPENAI_REASONING_EFFORT || "xhigh" },
       instructions,
       input: history ? `Recent conversation:\n${history}\n\nCurrent question:\n${question}` : question,
       tools: [{ type: "file_search", vector_store_ids: [vectorStoreId], max_num_results: 6 }],
