@@ -33,7 +33,9 @@ export default async (request: Request) => {
     return json({ error: "Assistant job access was rejected." }, 403);
   }
 
-  const response = await fetch(`https://api.openai.com/v1/responses/${encodeURIComponent(responseId)}`, {
+  const openAIUrl = new URL(`https://api.openai.com/v1/responses/${encodeURIComponent(responseId)}`);
+  openAIUrl.searchParams.append("include[]", "file_search_call.results");
+  const response = await fetch(openAIUrl, {
     headers: { authorization: `Bearer ${apiKey}` },
   });
   const data = await readOpenAIResponse(response);
