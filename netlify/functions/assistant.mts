@@ -79,7 +79,7 @@ Never claim to approve a traffic diversion, design, permit, inspection, or field
       input: history ? `Recent conversation:\n${history}\n\nCurrent question:\n${question}` : question,
       tools: [{ type: "file_search", vector_store_ids: [vectorStoreId], max_num_results: 6 }],
       include: ["file_search_call.results"],
-      max_output_tokens: 1_200,
+      max_output_tokens: 8_000,
       store: false,
       background: true,
     }),

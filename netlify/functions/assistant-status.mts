@@ -47,7 +47,11 @@ export default async (request: Request) => {
   }
   if (data.status && data.status !== "completed") {
     console.error("OpenAI background response ended", data.status, data.incomplete_details?.reason ?? "");
-    return json({ error: "The answer could not be completed. Please try the question again." }, 502);
+    return json({
+      error: "The answer could not be completed. Please try the question again.",
+      failureCode: data.status,
+      failureReason: data.incomplete_details?.reason || "unknown",
+    }, 502);
   }
 
   return json(formatAssistantResponse(data));
