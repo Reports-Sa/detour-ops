@@ -1,4 +1,5 @@
 import type { Config } from "@netlify/functions";
+import { getVectorStoreId } from "./_rag-config.mts";
 
 type FileCitation = {
   type: "file_citation";
@@ -55,8 +56,8 @@ function uniqueCitations(items: FileCitation[]) {
 }
 
 export default async (request: Request) => {
-  const vectorStoreId = process.env.OPENAI_VECTOR_STORE_ID?.trim();
   const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const vectorStoreId = await getVectorStoreId(apiKey, false);
 
   if (request.method === "GET") {
     return json({

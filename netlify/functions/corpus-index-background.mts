@@ -1,4 +1,5 @@
 import { getStore } from "@netlify/blobs";
+import { getVectorStoreId } from "./_rag-config.mts";
 
 type UploadSession = {
   id: string;
@@ -49,7 +50,7 @@ export default async (request: Request) => {
   if (!isAdmin(request)) return new Response("Unauthorized", { status: 401 });
 
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const vectorStoreId = process.env.OPENAI_VECTOR_STORE_ID?.trim();
+  const vectorStoreId = await getVectorStoreId(apiKey, false);
   if (!apiKey || !vectorStoreId) return new Response("RAG environment is not configured", { status: 503 });
 
   const { uploadId } = await request.json() as { uploadId?: string };

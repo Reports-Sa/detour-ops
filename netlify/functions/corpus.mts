@@ -1,5 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import type { Config } from "@netlify/functions";
+import { getVectorStoreId } from "./_rag-config.mts";
 
 type UploadSession = {
   id: string;
@@ -74,6 +75,15 @@ export default async (request: Request) => {
   const action = url.searchParams.get("action");
 
   if (request.method === "POST" && action === "init") {
+    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!apiKey) return json({ error: "OpenAI is not configured yet." }, 503);
+    try {
+      await getVectorStoreId(apiKey, true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Knowledge-base setup failed.";
+      return json({ error: message }, 502);
+    }
+
     const body = await request.json() as Partial<UploadSession>;
     const filename = String(body.filename ?? "").slice(0, 240);
     const extension = supportedExtensions.find((item) => filename.toLowerCase().endsWith(item));
@@ -163,7 +173,7 @@ export default async (request: Request) => {
     if (!source) return json({ error: "Source was not found." }, 404);
 
     const apiKey = process.env.OPENAI_API_KEY?.trim();
-    const vectorStoreId = process.env.OPENAI_VECTOR_STORE_ID?.trim();
+    const vectorStoreId = await getVectorStoreId(apiKey, false);
     if (apiKey && vectorStoreId && source.openaiFileId) {
       const auth = { authorization: `Bearer ${apiKey}` };
       await fetch(`https://api.openai.com/v1/vector_stores/${vectorStoreId}/files/${source.openaiFileId}`, { method: "DELETE", headers: auth });
