@@ -45,6 +45,7 @@ const documentStatusOrder: RecordStatus[] = [
 type CheckGroup = "survey" | "design" | "readiness" | "opening" | "operation" | "closeout";
 
 const storageKey = "detourops.workspace.v2";
+const workspaceIdentityKey = "detourops.workspace.identity";
 const phaseGroups: CheckGroup[][] = [
   ["survey"],
   ["design"],
@@ -99,20 +100,34 @@ function loadInitialState(): ProjectState {
   }
 }
 
+function getWorkspaceIdentity() {
+  if (typeof window === "undefined") return "";
+  const existing = window.localStorage.getItem(workspaceIdentityKey);
+  if (existing) return existing;
+  const created = crypto.randomUUID();
+  window.localStorage.setItem(workspaceIdentityKey, created);
+  return created;
+}
+
 export function DetourOps() {
   const [tab, setTab] = useState<TabId>("control");
   const [state, setState] = useState<ProjectState>(loadInitialState);
-  const [saveState, setSaveState] = useState("Local demo");
+  const [workspaceId, setWorkspaceId] = useState("");
+  const [saveState, setSaveState] = useState("Browser workspace");
   const [lastSaved, setLastSaved] = useState("Not synced");
   const [railOpen, setRailOpen] = useState(false);
 
   useEffect(() => {
-    void fetch("/api/workspace")
+    const identity = getWorkspaceIdentity();
+    setWorkspaceId(identity);
+    void fetch("/api/workspace", {
+      headers: { "x-detourops-workspace": identity },
+    })
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         if (data?.workspace?.state?.schemaVersion === 2) {
           setState(data.workspace.state as ProjectState);
-          setSaveState("Private cloud workspace");
+          setSaveState("Isolated cloud workspace");
           setLastSaved(`Revision ${data.workspace.revision}`);
         }
       })
@@ -187,11 +202,15 @@ export function DetourOps() {
   }
 
   async function saveWorkspace() {
+    const identity = workspaceId || getWorkspaceIdentity();
     setSaveState("Saving…");
     try {
       const response = await fetch("/api/workspace", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "x-detourops-workspace": identity,
+        },
         body: JSON.stringify({
           projectCode: state.project.code,
           projectTitle: state.project.title,
@@ -205,7 +224,7 @@ export function DetourOps() {
       }
       const result = (await response.json()) as { revision?: number; error?: string };
       if (!response.ok) throw new Error(result.error ?? "Save failed");
-      setSaveState("Private cloud saved");
+      setSaveState("Isolated cloud saved");
       setLastSaved(`Revision ${result.revision ?? "—"}`);
     } catch {
       setSaveState("Saved locally · cloud unavailable");
@@ -1081,36 +1100,197 @@ function Reports({
   );
 }
 
+type AgentStatus = {
+  ready: boolean;
+  source: string;
+  edition: string;
+  model: string;
+};
+
+type AgentExchange = {
+  id: string;
+  question: string;
+  answer: string;
+  abstained: boolean;
+  citations: Array<{ fileId?: string; filename: string }>;
+  evidence: Array<{ filename: string; excerpt: string; score?: number }>;
+};
+
+type CorpusSource = {
+  id: string;
+  filename: string;
+  title: string;
+  authority: string;
+  edition: string;
+  status: "uploading" | "indexing" | "ready" | "failed";
+  uploadedAt: string;
+  indexedAt?: string;
+  error?: string;
+};
+
 function CodeAssistant() {
   const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [uploadState, setUploadState] = useState("No indexed sources");
+  const [status, setStatus] = useState<AgentStatus>({
+    ready: false,
+    source: "Saudi Highway Code 305",
+    edition: "Checking configured corpus…",
+    model: "Source-controlled model",
+  });
+  const [exchanges, setExchanges] = useState<AgentExchange[]>([]);
+  const [sources, setSources] = useState<CorpusSource[]>([]);
+  const [uploadState, setUploadState] = useState("Administrator access required to change the corpus");
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState("");
 
-  async function uploadSource(file?: File) {
-    if (!file) return;
-    setUploadState("Storing source…");
-    const body = new FormData();
-    body.append("file", file);
-    body.append("category", "code-source");
+  useEffect(() => {
+    void fetch("/api/assistant", { headers: { accept: "application/json" } })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Assistant status unavailable");
+        return response.json() as Promise<AgentStatus>;
+      })
+      .then(setStatus)
+      .catch(() => setStatus((current) => ({
+        ...current,
+        ready: false,
+        edition: "Server configuration required",
+      })));
+
+    const refreshCorpus = () => {
+      void fetch("/api/corpus", { headers: { accept: "application/json" } })
+        .then((response) => response.ok ? response.json() : null)
+        .then((result) => {
+          if (result?.sources) setSources(result.sources as CorpusSource[]);
+        })
+        .catch(() => undefined);
+    };
+    refreshCorpus();
+    const interval = window.setInterval(refreshCorpus, 5_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  function corpusAdminKey() {
+    const stored = window.sessionStorage.getItem("detourops.corpus.admin");
+    if (stored) return stored;
+    const provided = window.prompt("Enter the DetourOps corpus administrator key. It is kept only for this browser session.")?.trim() ?? "";
+    if (provided) window.sessionStorage.setItem("detourops.corpus.admin", provided);
+    return provided;
+  }
+
+  async function refreshCorpusNow() {
+    const response = await fetch("/api/corpus", { headers: { accept: "application/json" } });
+    if (!response.ok) return;
+    const result = await response.json() as { sources?: CorpusSource[] };
+    setSources(result.sources ?? []);
+  }
+
+  async function uploadSources(files?: FileList | null) {
+    if (!files?.length) return;
+    const adminKey = corpusAdminKey();
+    if (!adminKey) return;
+
     try {
-      const response = await fetch("/api/files", { method: "POST", body });
-      if (response.status === 401) {
-        setUploadState("Sign in on the private site to store sources");
-        return;
+      for (const file of Array.from(files)) {
+        const title = window.prompt("Controlled document title", file.name.replace(/\.[^.]+$/, ""))?.trim() || file.name;
+        const authority = window.prompt("Issuing authority", "Saudi Road Code / project authority — verify")?.trim() || "Authority to be verified";
+        const edition = window.prompt("Edition / revision / effective date", "Verify before operational use")?.trim() || "Revision to be verified";
+        setUploadState(`Preparing ${file.name}…`);
+
+        const initResponse = await fetch("/api/corpus?action=init", {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-corpus-admin-key": adminKey },
+          body: JSON.stringify({ filename: file.name, mimeType: file.type, size: file.size, title, authority, edition }),
+        });
+        const initResult = await initResponse.json() as { uploadId?: string; chunkSize?: number; expectedChunks?: number; error?: string };
+        if (!initResponse.ok || !initResult.uploadId || !initResult.chunkSize) {
+          throw new Error(initResult.error || "Could not start the source upload.");
+        }
+
+        const totalChunks = initResult.expectedChunks ?? Math.ceil(file.size / initResult.chunkSize);
+        for (let index = 0; index < totalChunks; index += 1) {
+          const start = index * initResult.chunkSize;
+          const chunk = file.slice(start, Math.min(start + initResult.chunkSize, file.size));
+          setUploadState(`Uploading ${file.name} · ${index + 1}/${totalChunks}`);
+          const chunkResponse = await fetch(`/api/corpus?action=chunk&uploadId=${encodeURIComponent(initResult.uploadId)}&index=${index}`, {
+            method: "POST",
+            headers: { "content-type": "application/octet-stream", "x-corpus-admin-key": adminKey },
+            body: chunk,
+          });
+          if (!chunkResponse.ok) {
+            const chunkError = await chunkResponse.json().catch(() => ({})) as { error?: string };
+            throw new Error(chunkError.error || `Chunk ${index + 1} could not be uploaded.`);
+          }
+        }
+
+        setUploadState(`Queuing ${file.name} for private indexing…`);
+        const completeResponse = await fetch("/api/corpus?action=complete", {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-corpus-admin-key": adminKey },
+          body: JSON.stringify({ uploadId: initResult.uploadId }),
+        });
+        const completeResult = await completeResponse.json() as { error?: string };
+        if (!completeResponse.ok) throw new Error(completeResult.error || "Could not queue indexing.");
       }
-      if (!response.ok) throw new Error("Upload failed");
-      setUploadState("Stored privately · indexing connector pending");
-    } catch {
-      setUploadState("Source storage unavailable in local demo");
+      setUploadState("Upload complete · indexing continues securely in the background");
+      await refreshCorpusNow();
+    } catch (caught) {
+      setUploadState(caught instanceof Error ? caught.message : "Source upload failed.");
     }
   }
 
-  function askSourceOnly(event: React.FormEvent) {
+  async function removeSource(source: CorpusSource) {
+    if (!window.confirm(`Remove ${source.title} from the searchable corpus?`)) return;
+    const adminKey = corpusAdminKey();
+    if (!adminKey) return;
+    const response = await fetch(`/api/corpus?id=${encodeURIComponent(source.id)}`, {
+      method: "DELETE",
+      headers: { "x-corpus-admin-key": adminKey },
+    });
+    const result = await response.json() as { error?: string };
+    if (!response.ok) {
+      setUploadState(result.error || "Source could not be removed.");
+      return;
+    }
+    setUploadState(`${source.title} removed from the corpus`);
+    await refreshCorpusNow();
+  }
+
+  async function askSourceOnly(event: React.FormEvent) {
     event.preventDefault();
-    if (!question.trim()) return;
-    setAnswer(
-      "Answer withheld: no approved source has been indexed. DetourOps will not answer from general model knowledge. Connect the approved corpus and retrieval service first.",
-    );
+    const submittedQuestion = question.trim();
+    if (!submittedQuestion || asking) return;
+    setAsking(true);
+    setError("");
+
+    try {
+      const history = exchanges.flatMap((exchange) => [
+        { role: "user", content: exchange.question },
+        { role: "assistant", content: exchange.answer },
+      ]);
+      const response = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ question: submittedQuestion, history }),
+      });
+      const result = await response.json() as Omit<AgentExchange, "id" | "question"> & { error?: string };
+      if (!response.ok) throw new Error(result.error || "The assistant could not complete the request.");
+
+      setExchanges((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          question: submittedQuestion,
+          answer: result.answer,
+          abstained: result.abstained,
+          citations: result.citations ?? [],
+          evidence: result.evidence ?? [],
+        },
+      ]);
+      setQuestion("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The assistant is temporarily unavailable.");
+    } finally {
+      setAsking(false);
+    }
   }
 
   return (
@@ -1118,24 +1298,40 @@ function CodeAssistant() {
       <SectionHead
         code="AI"
         title="Source-Controlled Code Assistant"
-        description="A RAG-ready workspace for asking the Saudi Highway Code and approved project documents—designed to answer only from indexed sources and show the exact citation."
-        action={<span className="offline-chip">INDEXING NOT CONNECTED</span>}
+        description="A live RAG workspace for querying the Saudi Highway Code and approved project documents—restricted to indexed evidence and designed to abstain when support is insufficient."
+        action={<span className={status.ready ? "live-rag-chip" : "offline-chip"}>{status.ready ? "LIVE RAG · SOURCE CONTROLLED" : "CONFIGURATION REQUIRED"}</span>}
       />
 
       <section className="assistant-grid">
         <article className="source-vault">
-          <div className="vault-head"><div><span className="micro-label">APPROVED CORPUS</span><h3>Source vault</h3></div><span>0 INDEXED</span></div>
-          <div className="source-row pending">
-            <div className="file-mark">PDF</div><div><strong>Saudi Highway Code 305</strong><small>Candidate source · verify edition and authority</small></div><span>PENDING</span>
-          </div>
-          <div className="source-row empty">
-            <div className="file-mark">TDP</div><div><strong>Approved project TDP/TMP</strong><small>Not uploaded</small></div><span>EMPTY</span>
+          <div className="vault-head"><div><span className="micro-label">APPROVED CORPUS</span><h3>Source vault</h3></div><span>{sources.filter((source) => source.status === "ready").length} LIVE / {sources.length} TOTAL</span></div>
+          <div className="corpus-source-list">
+            {sources.map((source) => (
+              <div className={`source-row ${source.status === "ready" ? "indexed" : "pending"}`} key={source.id}>
+                <div className="file-mark">{source.filename.split(".").pop()?.slice(0, 4).toUpperCase() || "DOC"}</div>
+                <div>
+                  <strong>{source.title}</strong>
+                  <small>{source.authority} · {source.edition}</small>
+                  {source.error && <small className="source-error">{source.error}</small>}
+                </div>
+                <div className="source-actions">
+                  <span>{source.status.toUpperCase()}</span>
+                  <button type="button" onClick={() => void removeSource(source)} aria-label={`Remove ${source.title}`}>×</button>
+                </div>
+              </div>
+            ))}
+            {sources.length === 0 && (
+              <div className="source-row empty">
+                <div className="file-mark">PDF</div><div><strong>No indexed sources yet</strong><small>Add the first controlled Saudi guide below</small></div><span>EMPTY</span>
+              </div>
+            )}
           </div>
           <label className="upload-source">
-            <span>+ Add approved PDF or XLSX source</span>
-            <input type="file" accept=".pdf,.xlsx,image/png,image/jpeg" onChange={(event) => void uploadSource(event.target.files?.[0])} />
+            <span>+ Add controlled source files</span>
+            <input type="file" multiple accept=".pdf,.docx,.txt,.md,.pptx,.html" onChange={(event) => void uploadSources(event.target.files)} />
           </label>
           <p className="upload-state">{uploadState}</p>
+          <div className="managed-source"><span>CHUNKED PRIVATE INGESTION</span><p>Large guides are uploaded in protected chunks, indexed in the background, and added to the same searchable vector store. Only a corpus administrator can add or remove files.</p></div>
           <div className="corpus-rules">
             <h4>Corpus admission rule</h4>
             <ul>
@@ -1149,8 +1345,8 @@ function CodeAssistant() {
 
         <article className="chat-console">
           <header>
-            <div><span className="ai-signal">AI</span><div><strong>Code Query</strong><small>Source-only policy · citations required</small></div></div>
-            <span className="locked-status">LOCKED</span>
+            <div><span className="ai-signal">AI</span><div><strong>Code Query</strong><small>{status.model} · source-only policy · citations required</small></div></div>
+            <span className={status.ready ? "locked-status live" : "locked-status"}>{status.ready ? "READY" : "LOCKED"}</span>
           </header>
           <div className="chat-body">
             <div className="system-message">
@@ -1158,14 +1354,41 @@ function CodeAssistant() {
               <p>Use only retrieved passages from approved sources. Cite source, edition, section and page. If evidence is absent or conflicting, abstain and escalate.</p>
             </div>
             <div className="suggested-questions">
-              <span>AFTER INDEXING, ASK:</span>
+              <span>TRY A CONTROLLED QUERY:</span>
               {["What controls apply to a lane closure at this speed?", "Where does the code define taper length?", "What must be checked before opening the detour?"].map((item) => <button key={item} onClick={() => setQuestion(item)}>{item}</button>)}
             </div>
-            {answer && <div className="assistant-answer"><span>DETOUROPS</span><p>{answer}</p><small>No citation · no answer</small></div>}
+            <div className="agent-thread" aria-live="polite">
+              {exchanges.map((exchange) => (
+                <div className="agent-exchange" key={exchange.id}>
+                  <div className="user-question"><span>ENGINEER</span><p>{exchange.question}</p></div>
+                  <div className={`assistant-answer ${exchange.abstained ? "abstained" : ""}`}>
+                    <span>{exchange.abstained ? "DETOUROPS · ABSTAINED" : "DETOUROPS · EVIDENCE-LED"}</span>
+                    <p>{exchange.answer}</p>
+                    <div className="citation-strip">
+                      {exchange.citations.map((citation) => <b key={`${citation.fileId}-${citation.filename}`}>{citation.filename}</b>)}
+                    </div>
+                    {exchange.evidence.length > 0 && (
+                      <details className="retrieval-evidence">
+                        <summary>Inspect retrieved evidence ({exchange.evidence.length})</summary>
+                        {exchange.evidence.map((item, index) => (
+                          <div key={`${item.filename}-${index}`}>
+                            <strong>{item.filename}</strong>
+                            <p>{item.excerpt}</p>
+                          </div>
+                        ))}
+                      </details>
+                    )}
+                    <small>{exchange.citations.length > 0 ? `${exchange.citations.length} cited source${exchange.citations.length > 1 ? "s" : ""}` : "No citation · no engineering answer"}</small>
+                  </div>
+                </div>
+              ))}
+              {asking && <div className="agent-thinking"><i /><span>Retrieving approved passages and checking citations…</span></div>}
+              {error && <div className="agent-error"><strong>QUERY NOT COMPLETED</strong><p>{error}</p></div>}
+            </div>
           </div>
           <form className="chat-input" onSubmit={askSourceOnly}>
-            <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask an approved-source question…" />
-            <button type="submit">Ask</button>
+            <input value={question} maxLength={1500} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask an approved-source question…" disabled={!status.ready || asking} />
+            <button type="submit" disabled={!status.ready || asking || !question.trim()}>{asking ? "Checking…" : "Ask sources"}</button>
           </form>
         </article>
       </section>
