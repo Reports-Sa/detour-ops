@@ -1116,6 +1116,33 @@ type AgentExchange = {
   evidence: Array<{ filename: string; excerpt: string; score?: number }>;
 };
 
+type AgentPayload = Partial<Omit<AgentExchange, "id" | "question">> & {
+  error?: string;
+  pending?: boolean;
+  responseId?: string;
+  pollToken?: string;
+  status?: string;
+};
+
+async function readAgentPayload(response: Response): Promise<AgentPayload> {
+  const raw = await response.text();
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(response.status === 504
+      ? "The answer exceeded the live request window. Please retry; long answers now continue safely in the background."
+      : "The assistant service returned an unexpected response. Please retry.");
+  }
+  try {
+    return JSON.parse(raw) as AgentPayload;
+  } catch {
+    throw new Error("The assistant returned an unreadable response. Please retry.");
+  }
+}
+
+function waitFor(milliseconds: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
 type CorpusSource = {
   id: string;
   filename: string;
@@ -1279,8 +1306,36 @@ function CodeAssistant() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ question: submittedQuestion, history }),
       });
-      const result = await response.json() as Omit<AgentExchange, "id" | "question"> & { error?: string };
-      if (!response.ok) throw new Error(result.error || "The assistant could not complete the request.");
+      let result = await readAgentPayload(response);
+      if (!response.ok && response.status !== 202) {
+        throw new Error(result.error || "The assistant could not complete the request.");
+      }
+
+      if (result.pending) {
+        if (!result.responseId || !result.pollToken) {
+          throw new Error("The assistant could not track the background answer. Please retry.");
+        }
+        const responseId = result.responseId;
+        const pollToken = result.pollToken;
+        const deadline = Date.now() + 8 * 60_000;
+        while (result.pending && Date.now() < deadline) {
+          await waitFor(2_500);
+          const pollResponse = await fetch(`/api/assistant/status?responseId=${encodeURIComponent(responseId)}&pollToken=${encodeURIComponent(pollToken)}`, {
+            headers: { accept: "application/json" },
+          });
+          result = await readAgentPayload(pollResponse);
+          if (!pollResponse.ok && pollResponse.status !== 202) {
+            throw new Error(result.error || "The assistant could not complete the background answer.");
+          }
+        }
+        if (result.pending) {
+          throw new Error("The answer is taking longer than expected. Please submit the question again.");
+        }
+      }
+
+      if (!result.answer || typeof result.abstained !== "boolean") {
+        throw new Error(result.error || "The assistant returned an incomplete answer. Please retry.");
+      }
 
       setExchanges((current) => [
         ...current,

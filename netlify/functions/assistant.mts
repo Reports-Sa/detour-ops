@@ -1,35 +1,8 @@
 import type { Config } from "@netlify/functions";
 import { getVectorStoreId } from "./_rag-config.mts";
+import { signAssistantJob } from "./_assistant-auth.mts";
+import { formatAssistantResponse, readOpenAIResponse } from "./_assistant-response.mts";
 
-type FileCitation = {
-  type: "file_citation";
-  file_id?: string;
-  filename?: string;
-  index?: number;
-};
-
-type SearchResult = {
-  file_id?: string;
-  filename?: string;
-  text?: string;
-  score?: number;
-};
-
-type OpenAIOutput = {
-  type?: string;
-  results?: SearchResult[];
-  content?: Array<{
-    type?: string;
-    text?: string;
-    annotations?: FileCitation[];
-  }>;
-};
-
-type OpenAIResponse = {
-  id?: string;
-  output?: OpenAIOutput[];
-  error?: { message?: string };
-};
 
 const jsonHeaders = {
   "content-type": "application/json; charset=utf-8",
@@ -45,25 +18,6 @@ function sameOrigin(request: Request) {
   return !fetchSite || fetchSite === "same-origin" || fetchSite === "same-site";
 }
 
-function uniqueCitations(items: FileCitation[]) {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const key = `${item.file_id ?? ""}:${item.filename ?? ""}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function citationsFromResults(results: SearchResult[]) {
-  return uniqueCitations(results
-    .filter((item) => item.file_id || item.filename)
-    .map((item) => ({
-      type: "file_citation" as const,
-      file_id: item.file_id,
-      filename: item.filename,
-    })));
-}
 
 export default async (request: Request) => {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -127,56 +81,27 @@ Never claim to approve a traffic diversion, design, permit, inspection, or field
       include: ["file_search_call.results"],
       max_output_tokens: 1_200,
       store: false,
+      background: true,
     }),
   });
 
-  const data = await response.json() as OpenAIResponse;
+  const data = await readOpenAIResponse(response);
   if (!response.ok) {
     console.error("OpenAI response error", response.status, data.error?.message ?? "Unknown error");
     return json({ error: "The source-controlled assistant is temporarily unavailable." }, 502);
   }
 
-  const output = data.output ?? [];
-  const results = output
-    .filter((item) => item.type === "file_search_call")
-    .flatMap((item) => item.results ?? []);
-  const textItems = output
-    .filter((item) => item.type === "message")
-    .flatMap((item) => item.content ?? [])
-    .filter((item) => item.type === "output_text" && item.text);
-  const answer = textItems.map((item) => item.text).join("\n").trim();
-  const nativeCitations = uniqueCitations(textItems.flatMap((item) => item.annotations ?? []));
-  const citations = nativeCitations.length > 0 ? nativeCitations : citationsFromResults(results);
-
-  if (!answer || results.length === 0) {
-    return json({
-      answer: "The approved corpus did not provide enough citable evidence for this question. Check the current authority requirements, approved TDP/TMP, and the relevant code section before making a decision.",
-      abstained: true,
-      citations: [],
-      evidence: results.slice(0, 3).map((item) => ({
-        filename: item.filename || "Approved source",
-        excerpt: String(item.text ?? "").slice(0, 450),
-        score: item.score,
-      })),
-      responseId: data.id,
-    });
+  if (data.status === "completed") {
+    return json(formatAssistantResponse(data));
   }
+  if (!data.id) return json({ error: "The assistant could not start the answer." }, 502);
 
   return json({
-    answer,
-    abstained: false,
-    citations: citations.map((item) => ({
-      fileId: item.file_id,
-      filename: item.filename || "Approved source",
-    })),
-    citationMode: nativeCitations.length > 0 ? "native-file-citation" : "retrieved-evidence",
-    evidence: results.slice(0, 5).map((item) => ({
-      filename: item.filename || "Approved source",
-      excerpt: String(item.text ?? "").slice(0, 650),
-      score: item.score,
-    })),
+    pending: true,
+    status: data.status || "queued",
     responseId: data.id,
-  });
+    pollToken: signAssistantJob(data.id, apiKey),
+  }, 202);
 };
 
 export const config: Config = {
