@@ -243,12 +243,18 @@ export function DetourOps() {
     <div className="app-shell">
       <header className="topbar">
         <button
-          className="mobile-rail-toggle"
+          className={`mobile-rail-toggle ${railOpen ? "is-open" : ""}`}
           onClick={() => setRailOpen((open) => !open)}
-          aria-label="Toggle navigation"
+          aria-label={railOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={railOpen}
+          aria-controls="detourops-navigation"
         >
-          MENU
+          <span className="menu-glyph" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span>{railOpen ? "CLOSE" : "MENU"}</span>
         </button>
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true">
@@ -258,6 +264,7 @@ export function DetourOps() {
           <div>
             <p className="eyebrow">Traffic diversion control system</p>
             <h1>DETOUR<span>OPS</span></h1>
+            <p className="creator-credit"><span>Designed by</span> Ghazi Ahmed</p>
           </div>
         </div>
         <div className="topbar-project">
@@ -278,7 +285,7 @@ export function DetourOps() {
       </header>
 
       <div className="workspace">
-        <aside className={`side-rail ${railOpen ? "open" : ""}`}>
+        <aside id="detourops-navigation" className={`side-rail ${railOpen ? "open" : ""}`}>
           <div className="route-origin">
             <span className="route-dot start" />
             <div>
